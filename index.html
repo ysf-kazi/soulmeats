@@ -132,6 +132,8 @@
       max-width:400px;
       animation: fadeIn 0.3s ease-in-out;
       font-size: 14px;
+      max-height: 80vh;   /* limit height */
+      overflow-y: auto;   /* enable scroll */
     }
 
     #cart-modal h3 {
@@ -203,18 +205,15 @@
       font-size:16px;
       color:#007bff;
     }
-    #cart-modal {
-  max-height: 80vh;   /* limit height */
-  overflow-y: auto;   /* enable scroll */
-}
-.menu-item-controls button,
-.menu-item-controls input {
-  height: 30px;
-  vertical-align: middle;
-}
 
+    .menu-item-controls button,
+    .menu-item-controls input {
+      height: 30px;
+      vertical-align: middle;
+    }
   </style>
 </head>
+
 <body>
   <h2>Soulmeats Menu</h2>
   <input type="text" id="search" placeholder="Search menu..." onkeyup="renderMenu()">
@@ -227,6 +226,7 @@
     <div>
       <button onclick="viewDetails()">View Details</button>
       <button onclick="submitOrder()">Submit</button>
+      <button onclick="openCheckOrder()">Check Order</button> <!-- New popup trigger -->
     </div>
   </div>
 
@@ -237,178 +237,197 @@
   <div id="cart-modal">
     <h3>Cart Details</h3>
     <div id="cart-details"></div>
-    <textarea id="order-notes" placeholder="Add notes/instructions..." style="width:100%;height:60px;margin-bottom:10px;"></textarea>
+    <!-- Notes + Submit will be injected below items via JS -->
     <button onclick="closeModal()">Close</button>
   </div>
 
-  <!-- Order Check Section -->
-  <div id="order-check">
+  <!-- Check Order Modal -->
+  <div id="check-order-modal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); width:90%; max-width:400px; background:#fff; padding:15px; border-radius:10px; box-shadow:0 6px 12px rgba(0,0,0,0.3); z-index:2000;">
     <h3>Check Your Order</h3>
-    <input type="text" id="order-id-input" placeholder="Enter your Order ID">
+    <input type="text" id="order-id-input" placeholder="Enter your Order ID" style="width:100%; margin-bottom:10px;">
     <button onclick="checkOrder()">Get Bill</button>
+    <button onclick="closeCheckOrder()">Close</button>
     <div id="order-result"></div>
   </div>
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwXN-Uw0QNbMVsq8J3NiZ57MNar1Cl7sJYPlNvDpTulRv3KKAIaThhG5BnuxxZdCUUHsw/exec"; // Replace with your Web App URL
-    let menu = [];
-    let cart = [];
+<script>
+  const scriptURL = "https://script.google.com/macros/s/AKfycbwXN-Uw0QNbMVsq8J3NiZ57MNar1Cl7sJYPlNvDpTulRv3KKAIaThhG5BnuxxZdCUUHsw/exec"; 
+  let menu = [];
+  let cart = [];
 
-    function formatCurrency(amount) {
-      return amount.toLocaleString('en-US');
-    }
-
-    async function loadMenu() {
-      document.getElementById("loading").style.display = "block";
-      const res = await fetch(scriptURL);
-      menu = await res.json();
-      document.getElementById("loading").style.display = "none";
-      renderMenu();
-    }
-
-    function renderMenu() {
-      const search = document.getElementById("search").value.toLowerCase();
-      const menuDiv = document.getElementById("menu");
-      menuDiv.innerHTML = "";
-
-      const categories = [...new Set(menu.map(i => i.category))];
-      categories.forEach(cat => {
-        menuDiv.innerHTML += `<h3>${cat}</h3>`;
-        menu.filter(item => item.category === cat && item.name.toLowerCase().includes(search))
-            .forEach(item => {
-              const existing = cart.find(i => i.name === item.name);
-              const qty = existing ? existing.qty : 0;
-              menuDiv.innerHTML += `
-                <div class="menu-item">
-                  ${item.name} - Tsh ${formatCurrency(item.price)}
-                  <div class="menu-item-controls">
-                    <button onclick="changeQty('${item.name}',-1,${item.price})">-</button>
-                    <input type="number" min="0" value="${qty}" 
-                      onchange="setQty('${item.name}', this.value, ${item.price})">
-                    <button onclick="changeQty('${item.name}',1,${item.price})">+</button>
-                  </div>
-                </div>`;
-            });
-      });
-    }
-
-        function changeQty(name, delta, price) {
-      let item = cart.find(i => i.name === name);
-      if (!item && delta > 0) {
-        cart.push({ name, price, qty: 1 });
-      } else if (item) {
-        item.qty += delta;
-        if (item.qty <= 0) cart = cart.filter(i => i.name !== name);
-      }
-      renderCart();
-      renderMenu();
-    }
-
-    function setQty(name, qty, price) {
-      qty = parseInt(qty);
-      let item = cart.find(i => i.name === name);
-      if (qty > 0) {
-        if (item) item.qty = qty;
-        else cart.push({ name, price, qty });
-      } else {
-        cart = cart.filter(i => i.name !== name);
-      }
-      renderCart();
-      renderMenu();
-    }
-
-    function renderCart() {
-      let total = 0;
-      let count = 0;
-      cart.forEach(item => {
-        total += item.price * item.qty;
-        count += item.qty;
-      });
-      document.getElementById("total-bar").innerText = formatCurrency(total);
-      document.getElementById("cart-count").innerText = count;
-    }
-
-    function viewDetails() {
-      document.getElementById("cart-details").innerHTML = cart.map(i =>
-        `<div class="menu-item">
-          ${i.name} - Tsh ${formatCurrency(i.price)}
-          <div class="menu-item-controls">
-            <button onclick="changeQty('${i.name}',-1,${i.price})">-</button>
-            <input type="number" min="0" value="${i.qty}" 
-              onchange="setQty('${i.name}', this.value, ${i.price})">
-            <button onclick="changeQty('${i.name}',1,${i.price})">+</button>
-          </div>
-        </div>`
-      ).join("");
-      document.getElementById("overlay").style.display = "block";
-      document.getElementById("cart-modal").style.display = "block";
-    }
-
-    function closeModal() {
-      document.getElementById("overlay").style.display = "none";
-      document.getElementById("cart-modal").style.display = "none";
-    }
-async function submitOrder() {
-  if (cart.length === 0) {
-    alert("Cart is empty!");
-    return;
-  }
-  // Try query string first, then fallback to hash, then prompt
-// Try query string first (works on custom domains)
-// If empty, try hash (works on Google Sites)
-// If still empty, ask user
-let table = new URLSearchParams(window.location.search).get("table");
-if (!table) {
-  table = new URLSearchParams(window.location.hash.substring(1)).get("table");
-}
-table = table || prompt("Enter table number:");
-
-
-  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const notes = document.getElementById("order-notes").value || "";
-// Get current time in HHMM format (24hr)
-const now = new Date();
-const hours = String(now.getHours()).padStart(2, '0');
-const minutes = String(now.getMinutes()).padStart(2, '0');
-const timeCode = hours + minutes;
-
-// Build orderId as table + time
-const orderId = table + "-" + timeCode;
-
-  const orderData = { table, cart, total, notes, orderId };
-  const res = await fetch(scriptURL, { method: "POST", body: JSON.stringify(orderData) });
-  const result = await res.json();
-
-  if (result.status === "success") {
-    alert("✅ Order Received! Your Order ID: " + orderId);
-  } else {
-    alert("❌ Error submitting order");
+  function formatCurrency(amount) {
+    return amount.toLocaleString('en-US');
   }
 
-  cart = [];
-  renderCart();
-  renderMenu();
-  closeModal();
-  document.getElementById("order-notes").value = "";
-}
+  async function loadMenu() {
+    document.getElementById("loading").style.display = "block";
+    const res = await fetch(scriptURL);
+    menu = await res.json();
+    document.getElementById("loading").style.display = "none";
+    renderMenu();
+  }
 
+  function renderMenu() {
+    const search = document.getElementById("search").value.toLowerCase();
+    const menuDiv = document.getElementById("menu");
+    menuDiv.innerHTML = "";
 
-    async function checkOrder() {
-      const orderId = document.getElementById("order-id-input").value.trim();
-      if (!orderId) {
-        alert("Please enter your Order ID");
-        return;
-      }
-      const res = await fetch(scriptURL + "?orderId=" + orderId);
-      const data = await res.json();
-      if (data && data.total) {
-        document.getElementById("order-result").innerHTML =
-          "Order Total: Tsh " + formatCurrency(data.total) + "<br>Notes: " + (data.notes || "None");
-      } else {
-        document.getElementById("order-result").innerHTML = "Order not found.";
-      }
+    const categories = [...new Set(menu.map(i => i.category))];
+    categories.forEach(cat => {
+      menuDiv.innerHTML += `<h3>${cat}</h3>`;
+      menu.filter(item => item.category === cat && item.name.toLowerCase().includes(search))
+          .forEach(item => {
+            const existing = cart.find(i => i.name === item.name);
+            const qty = existing ? existing.qty : 0;
+            menuDiv.innerHTML += `
+              <div class="menu-item">
+                ${item.name} - Tsh ${formatCurrency(item.price)}
+                <div class="menu-item-controls">
+                  <button onclick="changeQty('${item.name}',-1,${item.price})">-</button>
+                  <input type="number" min="0" value="${qty}" 
+                    onchange="setQty('${item.name}', this.value, ${item.price})">
+                  <button onclick="changeQty('${item.name}',1,${item.price})">+</button>
+                </div>
+              </div>`;
+          });
+    });
+  }
+
+  function changeQty(name, delta, price) {
+    let item = cart.find(i => i.name === name);
+    if (!item && delta > 0) {
+      cart.push({ name, price, qty: 1 });
+    } else if (item) {
+      item.qty += delta;
+      if (item.qty <= 0) cart = cart.filter(i => i.name !== name);
+    }
+    renderCart();
+    renderMenu();
+    viewDetails(); // refresh cart modal live
+  }
+
+  function setQty(name, qty, price) {
+    qty = parseInt(qty);
+    let item = cart.find(i => i.name === name);
+    if (qty > 0) {
+      if (item) item.qty = qty;
+      else cart.push({ name, price, qty });
+    } else {
+      cart = cart.filter(i => i.name !== name);
+    }
+    renderCart();
+    renderMenu();
+    viewDetails(); // refresh cart modal live
+  }
+
+  function renderCart() {
+    let total = 0;
+    let count = 0;
+    cart.forEach(item => {
+      total += item.price * item.qty;
+      count += item.qty;
+    });
+    document.getElementById("total-bar").innerText = formatCurrency(total);
+    document.getElementById("cart-count").innerText = count;
+  }
+
+  function viewDetails() {
+    const itemsHtml = cart.map(i =>
+      `<div class="menu-item">
+        ${i.name} - Tsh ${formatCurrency(i.price)}
+        <div class="menu-item-controls">
+          <button onclick="changeQty('${i.name}',-1,${i.price})">-</button>
+          <input type="number" min="0" value="${i.qty}" 
+            onchange="setQty('${i.name}', this.value, ${i.price})">
+          <button onclick="changeQty('${i.name}',1,${i.price})">+</button>
+        </div>
+      </div>`
+    ).join("");
+
+    document.getElementById("cart-details").innerHTML =
+      itemsHtml +
+      `<textarea id="order-notes" placeholder="Add notes/instructions..." style="width:100%;height:60px;margin-top:10px;"></textarea>
+       <button onclick="submitOrder()">Submit Order</button>`;
+
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("cart-modal").style.display = "block";
+  }
+
+  function closeModal() {
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("cart-modal").style.display = "none";
+  }
+
+  async function submitOrder() {
+    if (cart.length === 0) {
+      alert("Cart is empty!");
+      return;
     }
 
-    loadMenu();
-  </script>
+    let table = new URLSearchParams(window.location.search).get("table");
+    if (!table) {
+      table = new URLSearchParams(window.location.hash.substring(1)).get("table");
+    }
+    table = table || prompt("Enter table number:");
+
+    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const notes = document.getElementById("order-notes").value || "";
+
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const timeCode = hours + minutes;
+    const orderId = table + "-" + timeCode;
+
+    const orderData = { table, cart, total, notes, orderId };
+    const res = await fetch(scriptURL, { method: "POST", body: JSON.stringify(orderData) });
+    const result = await res.json();
+
+    if (result.status === "success") {
+      alert("✅ Order Received! Your Order ID: " + orderId);
+      navigator.clipboard.writeText(orderId); // copy to clipboard
+    } else {
+      alert("❌ Error submitting order");
+    }
+
+    cart = [];
+    renderCart();
+    renderMenu();
+    closeModal();
+    document.getElementById("order-notes").value = "";
+  }
+
+  async function checkOrder() {
+    const orderId = document.getElementById("order-id-input").value.trim();
+    if (!orderId) {
+      alert("Please enter your Order ID");
+      return;
+    }
+    const res = await fetch(scriptURL + "?orderId=" + orderId);
+    const data = await res.json();
+    if (data && data.total) {
+      const items = data.items ? data.items.split('\n').join('<br>') : "";
+      document.getElementById("order-result").innerHTML =
+        `<strong>Order ID:</strong> ${data.orderId}<br>
+         <strong>Table:</strong> ${data.table}<br>
+         <strong>Items:</strong><br>${items}<br>
+         <strong>Total:</strong> Tsh ${formatCurrency(data.total)}<br>
+         <strong>Notes:</strong> ${data.notes || "None"}<br><br>
+         <strong>Lipa Number:</strong> 123456789`;
+    } else {
+      document.getElementById("order-result").innerHTML = "Order not found.";
+    }
+  }
+
+  function openCheckOrder() {
+    document.getElementById("check-order-modal").style.display = "block";
+  }
+
+  function closeCheckOrder() {
+    document.getElementById("check-order-modal").style.display = "none";
+  }
+
+  loadMenu();
+</script>
+
 </body>
 </html>
