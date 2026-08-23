@@ -226,7 +226,7 @@
     <div>
       <button onclick="viewDetails()">View Details</button>
       <button onclick="submitOrder()">Submit</button>
-      <button onclick="openCheckOrder()">Check Order</button> <!-- New popup trigger -->
+      <button onclick="openCheckOrder()">Get Bill</button> <!-- New popup trigger -->
     </div>
   </div>
 
@@ -302,7 +302,9 @@
     }
     renderCart();
     renderMenu();
-    viewDetails(); // refresh cart modal live
+    if (document.getElementById("cart-modal").style.display === "block") {
+    viewDetails(); // refresh only if modal is open
+  }
   }
 
   function setQty(name, qty, price) {
@@ -316,7 +318,9 @@
     }
     renderCart();
     renderMenu();
-    viewDetails(); // refresh cart modal live
+    if (document.getElementById("cart-modal").style.display === "block") {
+    viewDetails(); // refresh only if modal is open
+  }
   }
 
   function renderCart() {
