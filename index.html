@@ -355,7 +355,14 @@ table = table || prompt("Enter table number:");
 
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const notes = document.getElementById("order-notes").value || "";
-  const orderId = table + "-" + Date.now();
+// Get current time in HHMM format (24hr)
+const now = new Date();
+const hours = String(now.getHours()).padStart(2, '0');
+const minutes = String(now.getMinutes()).padStart(2, '0');
+const timeCode = hours + minutes;
+
+// Build orderId as table + time
+const orderId = table + "-" + timeCode;
 
   const orderData = { table, cart, total, notes, orderId };
   const res = await fetch(scriptURL, { method: "POST", body: JSON.stringify(orderData) });
