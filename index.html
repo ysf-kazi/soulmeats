@@ -412,10 +412,6 @@ function viewDetails() {
   }
   table = table || prompt("Enter table number:");
 
-  if (!table) {
-    alert("⚠️ Please input table number to call waiter.");
-    return;
-  }
 
   const res = await fetch(scriptURL + "?callWaiter=" + table);
   const result = await res.json();
