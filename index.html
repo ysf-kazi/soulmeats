@@ -429,13 +429,8 @@
 
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
     const notes = document.getElementById("order-notes").value || "";
-
     const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const timeCode = hours + minutes;
-    const orderId = table + "-" + timeCode;
-
+    const orderId = table + "-" + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
     const orderData = { table, cart, total, notes, orderId };
 
     try {
@@ -530,7 +525,6 @@
 
   loadMenu();
 </script>
-
 
 </body>
 
