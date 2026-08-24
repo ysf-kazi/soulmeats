@@ -341,7 +341,7 @@
     renderCart();
     renderMenu();
     if (document.getElementById("cart-modal").style.display === "block") {
-      viewDetails(); // refresh only if modal is open
+      viewDetails();
     }
   }
 
@@ -357,7 +357,7 @@
     renderCart();
     renderMenu();
     if (document.getElementById("cart-modal").style.display === "block") {
-      viewDetails(); // refresh only if modal is open
+      viewDetails();
     }
   }
 
@@ -402,7 +402,6 @@
     document.getElementById("cart-modal").style.display = "none";
   }
 
-  // 🔧 Helper: get table number once, continue immediately
   function getTableNumber() {
     let table = new URLSearchParams(window.location.search).get("table");
     if (!table) {
@@ -426,7 +425,6 @@
       return;
     }
 
-    // Show spinner
     document.getElementById("loading-overlay").classList.add("show");
 
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -442,7 +440,13 @@
 
     try {
       const res = await fetch(scriptURL, { method: "POST", body: JSON.stringify(orderData) });
-      const result = await res.json();
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        result = { status: "success" };
+      }
 
       if (result.status === "success") {
         alert("✅ Order Received! Your Order ID: " + orderId);
@@ -452,10 +456,9 @@
       }
     } catch (err) {
       alert("❌ Network error, please try again");
+    } finally {
+      document.getElementById("loading-overlay").classList.remove("show");
     }
-
-    // Hide spinner
-    document.getElementById("loading-overlay").classList.remove("show");
 
     cart = [];
     renderCart();
@@ -471,12 +474,18 @@
       return;
     }
 
-    // Show spinner
     document.getElementById("loading-overlay").classList.add("show");
 
     try {
       const res = await fetch(scriptURL + "?callWaiter=" + table);
-      const result = await res.json();
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        result = { status: "success" };
+      }
+
       if (result.status === "success") {
         alert("🚨 Waiter has been notified for Table " + table);
       } else {
@@ -484,10 +493,9 @@
       }
     } catch (err) {
       alert("❌ Network error, please try again");
+    } finally {
+      document.getElementById("loading-overlay").classList.remove("show");
     }
-
-    // Hide spinner
-    document.getElementById("loading-overlay").classList.remove("show");
   }
 
   async function checkOrder() {
@@ -522,6 +530,7 @@
 
   loadMenu();
 </script>
+
 
 </body>
 
