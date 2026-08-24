@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Soulmeats Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
+    h2 { color:#007bff; }
+    #orders, #calls { margin-top:20px; }
+    .alert { background:#ffdddd; border:1px solid #ff0000; padding:10px; margin:10px 0; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <h2>Soulmeats Dashboard</h2>
+  <div id="orders"><h3>New Orders</h3></div>
+  <div id="calls"><h3>Waiter Calls</h3></div>
+
+  <!-- Two separate sounds -->
+  <audio id="ping" src="ping.mp3" preload="auto"></audio>
+  <audio id="buzz" src="buzz.mp3" preload="auto"></audio>
+  
+  <script>
+    const scriptURL = "YOUR_SCRIPT_URL"; // same Apps Script endpoint
+
+    async function pollUpdates() {
+      try {
+        const res = await fetch(scriptURL + "?dashboard=1");
+        const data = await res.json();
+
+        // Handle new orders
+        if (data.newOrders && data.newOrders.length > 0) {
+          data.newOrders.forEach(order => {
+            document.getElementById("orders").innerHTML += 
+              `<div class="alert">🔔 New Order: ${order.orderId} (Table ${order.table})</div>`;
+            document.getElementById("ping").play(); // ping sound
+          });
+        }
+
+        // Handle waiter calls
+        if (data.calls && data.calls.length > 0) {
+          data.calls.forEach(call => {
+            document.getElementById("calls").innerHTML += 
+              `<div class="alert">🚨 Waiter Call: Table ${call.table}</div>`;
+            document.getElementById("buzz").play(); // buzz sound
+          });
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }
+
+    // Poll every 10 seconds
+    setInterval(pollUpdates, 10000);
+  </script>
+</body>
+</html>
