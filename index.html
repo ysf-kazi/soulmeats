@@ -395,8 +395,19 @@
 
   function openCheckOrder() { document.getElementById("check-order-modal").style.display = "block"; }
   function closeCheckOrder() { document.getElementById("check-order-modal").style.display = "none"; }
+// At the bottom of your script, add:
+window.changeQty = changeQty;
+window.setQty = setQty;
+window.viewDetails = viewDetails;
+window.closeModal = closeModal;
+window.submitOrder = submitOrder;
+window.callWaiter = callWaiter;
+window.checkOrder = checkOrder;
+window.openCheckOrder = openCheckOrder;
+window.closeCheckOrder = closeCheckOrder;
 
   loadMenu();
+
 </script>
 
 </body>
