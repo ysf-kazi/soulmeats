@@ -44,13 +44,25 @@
   <!-- Loading overlay -->
   <div id="loading-overlay">Loading...</div>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
-<script>
-  // Firebase init
-  const firebaseConfig = { /* your Firebase config here */ };
-  const app = firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+<script type="module">
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, setDoc, addDoc } 
+    from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCiQsHmUXjwQ4owvzdE36uxNV4KKuahrCQ",
+    authDomain: "soulmeats-fbed1.firebaseapp.com",
+    projectId: "soulmeats-fbed1",
+    storageBucket: "soulmeats-fbed1.firebasestorage.app",
+    messagingSenderId: "9679867484",
+    appId: "1:9679867484:web:ac25df8aacab362c9fe099"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
   let menu = [];
   let cart = [];
@@ -67,7 +79,7 @@
 
   async function loadMenu() {
     document.getElementById("loading-overlay").classList.add("show");
-    const snapshot = await db.collection("menu").get();
+    const snapshot = await getDocs(collection(db, "menu"));
     menu = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     document.getElementById("loading-overlay").classList.remove("show");
     renderMenu();
@@ -169,7 +181,7 @@
     const orderData = { orderId, table, cart, total, notes:"", status:"pending", timestamp:new Date() };
 
     try {
-      await db.collection("orders").doc(orderId).set(orderData);
+      await setDoc(doc(db, "orders", orderId), orderData);
       alert("✅ Order Received! Your Order ID: " + orderId);
     } catch (err) {
       alert("❌ Error submitting order");
@@ -187,7 +199,7 @@
     const table = prompt("Enter table number:");
     document.getElementById("loading-overlay").classList.add("show");
     try {
-      await db.collection("calls").add({ table, status:"pending", timestamp:new Date() });
+      await addDoc(collection(db, "calls"), { table, status:"pending", timestamp:new Date() });
       alert("🚨 Waiter has been notified for Table " + table);
     } catch (err) {
       alert("❌ Error calling waiter");
@@ -198,6 +210,7 @@
 
   loadMenu();
 </script>
+
 
 </body>
 
