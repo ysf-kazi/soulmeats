@@ -175,6 +175,7 @@
     z-index:2000;
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 
 </head>
@@ -216,8 +217,7 @@
     <button onclick="closeCheckOrder()">Close</button>
     <div id="order-result"></div>
   </div>
-
-  <script type="module">
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getFirestore, collection, getDocs, doc, setDoc, getDoc, addDoc } 
     from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
@@ -239,6 +239,14 @@
 
   function formatCurrency(amount) { return amount.toLocaleString('en-US'); }
 
+  // ✅ Auto-fetch table from URL
+  function getTableNumber() {
+    let table = new URLSearchParams(window.location.search).get("table");
+    if (!table) table = new URLSearchParams(window.location.hash.substring(1)).get("table");
+    if (!table) table = prompt("Enter table number:");
+    return table;
+  }
+
   async function loadMenu() {
     document.getElementById("loading").style.display = "block";
     const snapshot = await getDocs(collection(db, "menu"));
@@ -247,6 +255,7 @@
     renderMenu();
   }
 
+  // ✅ Search by name OR category
   function renderMenu() {
     const search = document.getElementById("search").value.toLowerCase();
     const menuDiv = document.getElementById("menu");
@@ -254,21 +263,27 @@
 
     const categories = [...new Set(menu.map(i => i.category))];
     categories.forEach(cat => {
-      menuDiv.innerHTML += `<h3>${cat}</h3>`;
-      menu.filter(item => item.category === cat && item.name.toLowerCase().includes(search))
-          .forEach(item => {
-            const existing = cart.find(i => i.id === item.id);
-            const qty = existing ? existing.qty : 0;
-            menuDiv.innerHTML += `
-              <div class="menu-item">
-                ${item.name} - Tsh ${formatCurrency(item.price)}
-                <div class="menu-item-controls">
-                  <button onclick="changeQty('${item.id}',-1,${item.price})">-</button>
-                  <input type="number" min="0" value="${qty}" onchange="setQty('${item.id}', this.value, ${item.price})">
-                  <button onclick="changeQty('${item.id}',1,${item.price})">+</button>
-                </div>
-              </div>`;
-          });
+      const catMatch = cat.toLowerCase().includes(search);
+      const items = menu.filter(item => 
+        item.category === cat && 
+        (item.name.toLowerCase().includes(search) || catMatch || search === "")
+      );
+      if (items.length > 0) {
+        menuDiv.innerHTML += `<h3>${cat}</h3>`;
+        items.forEach(item => {
+          const existing = cart.find(i => i.id === item.id);
+          const qty = existing ? existing.qty : 0;
+          menuDiv.innerHTML += `
+            <div class="menu-item">
+              ${item.name} - Tsh ${formatCurrency(item.price)}
+              <div class="menu-item-controls">
+                <button onclick="changeQty('${item.id}',-1,${item.price})">-</button>
+                <input type="number" min="0" value="${qty}" onchange="setQty('${item.id}', this.value, ${item.price})">
+                <button onclick="changeQty('${item.id}',1,${item.price})">+</button>
+              </div>
+            </div>`;
+        });
+      }
     });
   }
 
@@ -281,8 +296,7 @@
       item.qty += delta;
       if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
     }
-    renderCart();
-    renderMenu();
+    renderCart(); renderMenu();
     if (document.getElementById("cart-modal").style.display === "block") viewDetails();
   }
 
@@ -295,11 +309,8 @@
         const menuItem = menu.find(m => m.id === id);
         cart.push({ id, name: menuItem.name, price, qty });
       }
-    } else {
-      cart = cart.filter(i => i.id !== id);
-    }
-    renderCart();
-    renderMenu();
+    } else cart = cart.filter(i => i.id !== id);
+    renderCart(); renderMenu();
     if (document.getElementById("cart-modal").style.display === "block") viewDetails();
   }
 
@@ -326,7 +337,8 @@
 
     document.getElementById("cart-details").innerHTML =
       itemsHtml +
-      `<div style="margin-top:10px;font-weight:bold;">Total: Tsh ${formatCurrency(total)}</div>`;
+      `<div style="margin-top:10px;font-weight:bold;">Total: Tsh ${formatCurrency(total)}</div>
+       <button onclick="submitOrder()">Submit Order</button>`;  // ✅ Submit from modal
 
     document.getElementById("overlay").style.display = "block";
     document.getElementById("cart-modal").style.display = "block";
@@ -339,39 +351,35 @@
 
   async function submitOrder() {
     if (cart.length === 0) { alert("Cart is empty!"); return; }
-    const table = prompt("Enter table number:");
+    const table = getTableNumber();
     if (!table) { alert("⚠️ Table number is required!"); return; }
 
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
     const notes = document.getElementById("order-notes").value || "";
-    const orderId = table + "-" + Date.now();
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+    const orderId = table + "-" + hhmm;
 
     const orderData = { orderId, table, cart, total, notes, status:"pending", timestamp:new Date() };
 
     try {
       await setDoc(doc(db, "orders", orderId), orderData);
       alert("✅ Order Received! Your Order ID: " + orderId);
-      navigator.clipboard.writeText(orderId);
-    } catch (err) {
-      alert("❌ Error submitting order");
-    }
+      navigator.clipboard.writeText(orderId);  // ✅ Auto copy
+    } catch (err) { alert("❌ Error submitting order"); }
 
     cart = [];
-    renderCart();
-    renderMenu();
-    closeModal();
+    renderCart(); renderMenu(); closeModal();
     document.getElementById("order-notes").value = "";
   }
 
   async function callWaiter() {
-    const table = prompt("Enter table number:");
+    const table = getTableNumber();
     if (!table) { alert("⚠️ Table number is required!"); return; }
     try {
       await addDoc(collection(db, "calls"), { table, status:"pending", timestamp:new Date() });
       alert("🚨 Waiter has been notified for Table " + table);
-    } catch (err) {
-      alert("❌ Error calling waiter");
-    }
+    } catch (err) { alert("❌ Error calling waiter"); }
   }
 
   async function checkOrder() {
@@ -382,33 +390,60 @@
       const data = docSnap.data();
       const items = data.cart.map(i => `${i.qty} x ${i.name}`).join("<br>");
       document.getElementById("order-result").innerHTML =
-        `<strong>Order ID:</strong> ${data.orderId}<br>
-         <strong>Table:</strong> ${data.table}<br>
-         <strong>Items:</strong><br>${items}<br>
-         <strong>Total:</strong> Tsh ${formatCurrency(data.total)}<br>
-         <strong>Notes:</strong> ${data.notes || "None"}<br><br>
-         <strong>Lipa Number:</strong> 123456789`;
+        `<div style="background:#f9f9f9;padding:10px;border-radius:8px;">
+           <strong>Order ID:</strong> ${data.orderId}<br>
+           <strong>Table:</strong> ${data.table}<br>
+           <strong>Items:</strong><br>${items}<br>
+           <strong>Total:</strong> Tsh ${formatCurrency(data.total)}<br>
+           <strong>Notes:</strong> ${data.notes || "None"}<br><br>
+           <button onclick="saveBillAsImage()">Save as Image</button>
+           <button onclick="shareBill()">Share</button>
+         </div>`;
     } else {
       document.getElementById("order-result").innerHTML = "Order not found.";
     }
   }
+    // ✅ Save bill as image (requires html2canvas library)
+  function saveBillAsImage() {
+    const node = document.getElementById("order-result");
+    html2canvas(node).then(canvas => {
+      const link = document.createElement("a");
+      link.download = "order-bill.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+  }
 
-  function openCheckOrder() { document.getElementById("check-order-modal").style.display = "block"; }
-  function closeCheckOrder() { document.getElementById("check-order-modal").style.display = "none"; }
-// At the bottom of your script, add:
-window.changeQty = changeQty;
-window.setQty = setQty;
-window.viewDetails = viewDetails;
-window.closeModal = closeModal;
-window.submitOrder = submitOrder;
-window.callWaiter = callWaiter;
-window.checkOrder = checkOrder;
-window.openCheckOrder = openCheckOrder;
-window.closeCheckOrder = closeCheckOrder;
+  // ✅ Share bill (requires Web Share API support)
+  function shareBill() {
+    const billText = document.getElementById("order-result").innerText;
+    if (navigator.share) {
+      navigator.share({
+        title: "Soulmeats Order Bill",
+        text: billText
+      }).catch(err => console.log("Share failed:", err));
+    } else {
+      alert("Sharing not supported on this device. You can copy manually.");
+    }
+  }
 
+  // ✅ Expose functions globally for inline onclick
+  window.changeQty = changeQty;
+  window.setQty = setQty;
+  window.viewDetails = viewDetails;
+  window.closeModal = closeModal;
+  window.submitOrder = submitOrder;
+  window.callWaiter = callWaiter;
+  window.checkOrder = checkOrder;
+  window.openCheckOrder = () => document.getElementById("check-order-modal").style.display = "block";
+  window.closeCheckOrder = () => document.getElementById("check-order-modal").style.display = "none";
+  window.saveBillAsImage = saveBillAsImage;
+  window.shareBill = shareBill;
+
+  // ✅ Load menu on start
   loadMenu();
-
 </script>
+
 
 </body>
 
