@@ -3,292 +3,55 @@
 <head>
   <title>Soulmeats Ordering</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f4f6f9;
-      margin: 0;
-      padding-bottom: 120px;
-      color: #333;
-    }
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding:0; }
+  h2 { margin-top:0; }
+  .menu-item { padding:10px; border-bottom:1px solid #ddd; }
+  .menu-item.unavailable { color:#999; }
+  .menu-item-note { font-size:0.9em; color:red; }
+  .menu-item-controls { margin-top:5px; }
+  #cart-bar { position:fixed; bottom:0; left:0; right:0; background:#333; color:#fff; padding:10px; display:flex; justify-content:space-between; }
+  #cart-modal, #overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; }
+  #overlay { background:rgba(0,0,0,0.5); }
+  #cart-modal { background:#fff; margin:auto; padding:20px; width:90%; max-width:400px; z-index:10; }
+  #loading-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.8); align-items:center; justify-content:center; font-size:1.2em; }
+  #loading-overlay.show { display:flex; }
+</style>
 
-    h2 {
-      text-align: center;
-      padding: 15px;
-      margin: 0;
-      background: #007bff;
-      color: white;
-      font-size: 20px;
-    }
-
-    h3 {
-      margin: 15px 5% 10px;
-      padding-bottom: 5px;
-      border-bottom: 2px solid #007bff;
-      color: #007bff;
-      font-size: 18px;
-    }
-
-    #search {
-      width: 90%;
-      margin: 10px auto;
-      display: block;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-      position: sticky;
-      top: 0;
-      background: #f4f6f9;
-      z-index: 100;
-    }
-
-    .menu-item {
-      background: #fff;
-      padding: 12px;
-      margin: 8px auto;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 90%;
-      font-size: 15px;
-    }
-
-    .menu-item-controls {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .menu-item button {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.3s;
-      font-size: 14px;
-    }
-
-    .menu-item button:hover {
-      background: #218838;
-    }
-
-    .menu-item input {
-      width: 40px;
-      text-align: center;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 4px;
-    }
-
-    #cart-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #007bff;
-      color: white;
-      padding: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 15px;
-      box-shadow: 0 -2px 6px rgba(0,0,0,0.2);
-      z-index: 200;
-    }
-
-    #cart-bar div {
-      display: flex;
-      gap: 8px;
-    }
-
-    #cart-bar button {
-      background: white;
-      color: #007bff;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    #cart-modal {
-      display:none;
-      position:fixed;
-      top:50%;
-      left:50%;
-      transform:translate(-50%, -50%);
-      background:#fff;
-      padding:15px;
-      border-radius:10px;
-      box-shadow:0 6px 12px rgba(0,0,0,0.3);
-      z-index:1000;
-      width:90%;
-      max-width:400px;
-      animation: fadeIn 0.3s ease-in-out;
-      font-size: 14px;
-      max-height: 80vh;   /* limit height */
-      overflow-y: auto;   /* enable scroll */
-    }
-
-    #cart-modal h3 {
-      margin-top:0;
-      color:#007bff;
-      font-size: 16px;
-    }
-
-    #cart-modal button {
-      margin-top: 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    /* Cart modal background overlay */
-    #overlay {
-      display:none;
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:rgba(0,0,0,0.5);
-      z-index:999;
-    }
-
-    /* Spinner overlay (hidden by default) */
-    #loading-overlay {
-      display:none;
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:rgba(255,255,255,0.8);
-      z-index:9999;
-      align-items:center;
-      justify-content:center;
-    }
-    #loading-overlay.show {
-      display:flex;
-    }
-
-    @keyframes fadeIn {
-      from {opacity:0; transform:translate(-50%, -60%);}
-      to {opacity:1; transform:translate(-50%, -50%);}
-    }
-
-    #order-check {
-      width: 90%;
-      margin: 20px auto;
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    #order-check input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    #order-check button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-      font-weight: bold;
-    }
-
-    #loading {
-      text-align:center;
-      padding:20px;
-      font-size:16px;
-      color:#007bff;
-    }
-
-    .spinner {
-      border: 6px solid #f3f3f3;
-      border-top: 6px solid #007bff;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .menu-item-controls button,
-    .menu-item-controls input {
-      height: 30px;
-      vertical-align: middle;
-    }
-  </style>
 </head>
 
 
 <body>
-  <h2>Soulmeats Menu</h2>
-  <input type="text" id="search" placeholder="Search menu..." onkeyup="renderMenu()">
-  <div id="loading">Loading menu...</div>
+  <h2>Menu</h2>
+  <input id="search" placeholder="Search..." oninput="renderMenu()">
   <div id="menu"></div>
 
-  <!-- Fixed Cart Bar -->
+  <!-- Cart bar -->
   <div id="cart-bar">
-    <span>Cart (<span id="cart-count">0</span>) | Total: Tsh <span id="total-bar">0</span></span>
-    <div>
-      <button onclick="viewDetails()">View Details</button>
-      <button onclick="submitOrder()">Submit</button>
-      <button onclick="openCheckOrder()">Get Bill</button> <!-- New popup trigger -->
-      <button onclick="callWaiter()">Call Waiter</button> <!-- New -->
-    </div>
+    <span id="cart-count">0</span> items | Total: Tsh <span id="total-bar">0</span>
+    <button onclick="viewDetails()">View Cart</button>
+    <button onclick="callWaiter()">Call Waiter</button>
   </div>
 
-  <!-- Cart Modal Background Overlay -->
-  <div id="overlay"></div>
-
-  <!-- Spinner Overlay (hidden by default, toggled via JS) -->
-  <div id="loading-overlay">
-    <div class="spinner"></div>
-  </div>
-
-  <!-- Cart Modal -->
+  <!-- Cart modal -->
+  <div id="overlay" onclick="closeModal()"></div>
   <div id="cart-modal">
-    <h3>Cart Details</h3>
+    <h3>Your Cart</h3>
     <div id="cart-details"></div>
-    <!-- Notes + Submit will be injected below items via JS -->
     <button onclick="closeModal()">Close</button>
   </div>
 
-  <!-- Check Order Modal -->
-  <div id="check-order-modal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); width:90%; max-width:400px; background:#fff; padding:15px; border-radius:10px; box-shadow:0 6px 12px rgba(0,0,0,0.3); z-index:2000;">
-    <h3>Check Your Order</h3>
-    <input type="text" id="order-id-input" placeholder="Enter your Order ID" style="width:100%; margin-bottom:10px;">
-    <button onclick="checkOrder()">Get Bill</button>
-    <button onclick="closeCheckOrder()">Close</button>
-    <div id="order-result"></div>
-  </div>
+  <!-- Loading overlay -->
+  <div id="loading-overlay">Loading...</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 <script>
-  const scriptURL = "https://script.google.com/macros/s/AKfycbwXN-Uw0QNbMVsq8J3NiZ57MNar1Cl7sJYPlNvDpTulRv3KKAIaThhG5BnuxxZdCUUHsw/exec"; 
+  // Firebase init
+  const firebaseConfig = { /* your Firebase config here */ };
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
   let menu = [];
   let cart = [];
 
@@ -296,11 +59,17 @@
     return amount.toLocaleString('en-US');
   }
 
+  function isAvailableToday(item) {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
+    const allowed = item.availabilityDays || [];
+    return allowed.includes(today) && !item.isDisabled;
+  }
+
   async function loadMenu() {
-    document.getElementById("loading").style.display = "block";
-    const res = await fetch(scriptURL);
-    menu = await res.json();
-    document.getElementById("loading").style.display = "none";
+    document.getElementById("loading-overlay").classList.add("show");
+    const snapshot = await db.collection("menu").get();
+    menu = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    document.getElementById("loading-overlay").classList.remove("show");
     renderMenu();
   }
 
@@ -314,51 +83,51 @@
       menuDiv.innerHTML += `<h3>${cat}</h3>`;
       menu.filter(item => item.category === cat && item.name.toLowerCase().includes(search))
           .forEach(item => {
-            const existing = cart.find(i => i.name === item.name);
+            const available = isAvailableToday(item);
+            const existing = cart.find(i => i.id === item.id);
             const qty = existing ? existing.qty : 0;
             menuDiv.innerHTML += `
-              <div class="menu-item">
+              <div class="menu-item ${available ? "" : "unavailable"}">
                 ${item.name} - Tsh ${formatCurrency(item.price)}
-                <div class="menu-item-controls">
-                  <button onclick="changeQty('${item.name}',-1,${item.price})">-</button>
-                  <input type="number" min="0" value="${qty}" 
-                    onchange="setQty('${item.name}', this.value, ${item.price})">
-                  <button onclick="changeQty('${item.name}',1,${item.price})">+</button>
-                </div>
+                ${available 
+                  ? `<div class="menu-item-controls">
+                       <button onclick="changeQty('${item.id}',-1,${item.price})">-</button>
+                       <input type="number" min="0" value="${qty}" onchange="setQty('${item.id}', this.value, ${item.price})">
+                       <button onclick="changeQty('${item.id}',1,${item.price})">+</button>
+                     </div>`
+                  : `<div class="menu-item-note">❌ Not available today</div>`}
               </div>`;
           });
     });
   }
 
-  function changeQty(name, delta, price) {
-    let item = cart.find(i => i.name === name);
+  function changeQty(id, delta, price) {
+    let item = cart.find(i => i.id === id);
     if (!item && delta > 0) {
-      cart.push({ name, price, qty: 1 });
+      const menuItem = menu.find(m => m.id === id);
+      cart.push({ id, name: menuItem.name, price, qty: 1 });
     } else if (item) {
       item.qty += delta;
-      if (item.qty <= 0) cart = cart.filter(i => i.name !== name);
+      if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
     }
     renderCart();
     renderMenu();
-    if (document.getElementById("cart-modal").style.display === "block") {
-      viewDetails();
-    }
   }
 
-  function setQty(name, qty, price) {
+  function setQty(id, qty, price) {
     qty = parseInt(qty);
-    let item = cart.find(i => i.name === name);
+    let item = cart.find(i => i.id === id);
     if (qty > 0) {
       if (item) item.qty = qty;
-      else cart.push({ name, price, qty });
+      else {
+        const menuItem = menu.find(m => m.id === id);
+        cart.push({ id, name: menuItem.name, price, qty });
+      }
     } else {
-      cart = cart.filter(i => i.name !== name);
+      cart = cart.filter(i => i.id !== id);
     }
     renderCart();
     renderMenu();
-    if (document.getElementById("cart-modal").style.display === "block") {
-      viewDetails();
-    }
   }
 
   function renderCart() {
@@ -374,25 +143,12 @@
 
   function viewDetails() {
     const itemsHtml = cart.map(i =>
-      `<div class="menu-item">
-        ${i.name} - Tsh ${formatCurrency(i.price)}
-        <div class="menu-item-controls">
-          <button onclick="changeQty('${i.name}',-1,${i.price})">-</button>
-          <input type="number" min="0" value="${i.qty}" 
-            onchange="setQty('${i.name}', this.value, ${i.price})">
-          <button onclick="changeQty('${i.name}',1,${i.price})">+</button>
-        </div>
-      </div>`
+      `<div>${i.qty} x ${i.name} - Tsh ${formatCurrency(i.price)}</div>`
     ).join("");
-
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-
     document.getElementById("cart-details").innerHTML =
-      itemsHtml +
-      `<div style="margin-top:10px;font-weight:bold;">Total: Tsh ${formatCurrency(total)}</div>
-       <textarea id="order-notes" placeholder="Add notes/instructions..." style="width:100%;height:60px;margin-top:10px;"></textarea>
-       <button onclick="submitOrder()">Submit Order</button>`;
-
+      itemsHtml + `<div><strong>Total: Tsh ${formatCurrency(total)}</strong></div>
+                   <button onclick="submitOrder()">Submit Order</button>`;
     document.getElementById("overlay").style.display = "block";
     document.getElementById("cart-modal").style.display = "block";
   }
@@ -402,55 +158,21 @@
     document.getElementById("cart-modal").style.display = "none";
   }
 
-  function getTableNumber() {
-    let table = new URLSearchParams(window.location.search).get("table");
-    if (!table) {
-      table = new URLSearchParams(window.location.hash.substring(1)).get("table");
-    }
-    if (!table) {
-      table = prompt("Enter table number:");
-    }
-    return table;
-  }
-
   async function submitOrder() {
-    if (cart.length === 0) {
-      alert("Cart is empty!");
-      return;
-    }
-
-    const table = getTableNumber();
-    if (!table) {
-      alert("⚠️ Table number is required!");
-      return;
-    }
-
+    if (cart.length === 0) { alert("Cart is empty!"); return; }
     document.getElementById("loading-overlay").classList.add("show");
 
+    const table = prompt("Enter table number:");
+    const orderId = table + "-" + Date.now();
     const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const notes = document.getElementById("order-notes").value || "";
-    const now = new Date();
-    const orderId = table + "-" + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
-    const orderData = { table, cart, total, notes, orderId };
+
+    const orderData = { orderId, table, cart, total, notes:"", status:"pending", timestamp:new Date() };
 
     try {
-      const res = await fetch(scriptURL, { method: "POST", body: JSON.stringify(orderData) });
-      const text = await res.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        result = { status: "success" };
-      }
-
-      if (result.status === "success") {
-        alert("✅ Order Received! Your Order ID: " + orderId);
-        navigator.clipboard.writeText(orderId);
-      } else {
-        alert("❌ Error submitting order");
-      }
+      await db.collection("orders").doc(orderId).set(orderData);
+      alert("✅ Order Received! Your Order ID: " + orderId);
     } catch (err) {
-      alert("❌ Network error, please try again");
+      alert("❌ Error submitting order");
     } finally {
       document.getElementById("loading-overlay").classList.remove("show");
     }
@@ -459,73 +181,25 @@
     renderCart();
     renderMenu();
     closeModal();
-    document.getElementById("order-notes").value = "";
   }
 
   async function callWaiter() {
-    const table = getTableNumber();
-    if (!table) {
-      alert("⚠️ Table number is required!");
-      return;
-    }
-
+    const table = prompt("Enter table number:");
     document.getElementById("loading-overlay").classList.add("show");
-
     try {
-      const res = await fetch(scriptURL + "?callWaiter=" + table);
-      const text = await res.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        result = { status: "success" };
-      }
-
-      if (result.status === "success") {
-        alert("🚨 Waiter has been notified for Table " + table);
-      } else {
-        alert("❌ Error calling waiter");
-      }
+      await db.collection("calls").add({ table, status:"pending", timestamp:new Date() });
+      alert("🚨 Waiter has been notified for Table " + table);
     } catch (err) {
-      alert("❌ Network error, please try again");
+      alert("❌ Error calling waiter");
     } finally {
       document.getElementById("loading-overlay").classList.remove("show");
     }
-  }
-
-  async function checkOrder() {
-    const orderId = document.getElementById("order-id-input").value.trim();
-    if (!orderId) {
-      alert("Please enter your Order ID");
-      return;
-    }
-    const res = await fetch(scriptURL + "?orderId=" + orderId);
-    const data = await res.json();
-    if (data && data.total) {
-      const items = data.items ? data.items.split('\n').join('<br>') : "";
-      document.getElementById("order-result").innerHTML =
-        `<strong>Order ID:</strong> ${data.orderId}<br>
-         <strong>Table:</strong> ${data.table}<br>
-         <strong>Items:</strong><br>${items}<br>
-         <strong>Total:</strong> Tsh ${formatCurrency(data.total)}<br>
-         <strong>Notes:</strong> ${data.notes || "None"}<br><br>
-         <strong>Lipa Number:</strong> 123456789`;
-    } else {
-      document.getElementById("order-result").innerHTML = "Order not found.";
-    }
-  }
-
-  function openCheckOrder() {
-    document.getElementById("check-order-modal").style.display = "block";
-  }
-
-  function closeCheckOrder() {
-    document.getElementById("check-order-modal").style.display = "none";
   }
 
   loadMenu();
 </script>
 
 </body>
+
 
 </html>
