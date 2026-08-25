@@ -57,67 +57,91 @@
   <audio id="order-sound" src="order-tone.mp3"></audio>
   <audio id="call-sound" src="buzz-tone.mp3"></audio>
 
-  <script>
-  // Firebase init
-  const firebaseConfig = { /* your config */ };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+ <script type="module">
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { 
+    getFirestore, collection, query, where, onSnapshot, 
+    doc, getDoc, updateDoc, setDoc 
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCiQsHmUXjwQ4owvzdE36uxNV4KKuahrCQ",
+    authDomain: "soulmeats-fbed1.firebaseapp.com",
+    projectId: "soulmeats-fbed1",
+    storageBucket: "soulmeats-fbed1.firebasestorage.app",
+    messagingSenderId: "9679867484",
+    appId: "1:9679867484:web:ac25df8aacab362c9fe099"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
   // Dashboard listeners
-  db.collection("orders").where("status","==","pending")
-    .onSnapshot(snapshot => {
-      const list = document.getElementById("orders-list");
-      list.innerHTML = "";
-      snapshot.forEach(doc => {
-        const order = doc.data();
-        list.innerHTML += `
-          <div class="card unhandled">
-            <strong>${order.orderId}</strong> (Table ${order.table})<br>
-            Total: ${order.total}<br>
-            <button onclick="viewOrder('${doc.id}')">View</button>
-            <button onclick="handleOrder('${doc.id}')">Mark Handled</button>
-          </div>`;
-      });
-      if (!snapshot.empty) document.getElementById("order-sound").play();
+  const ordersQuery = query(collection(db, "orders"), where("status","==","pending"));
+  onSnapshot(ordersQuery, snapshot => {
+    const list = document.getElementById("orders-list");
+    list.innerHTML = "";
+    snapshot.forEach(docSnap => {
+      const order = docSnap.data();
+      list.innerHTML += `
+        <div class="card unhandled">
+          <strong>${order.orderId}</strong> (Table ${order.table})<br>
+          Total: ${order.total}<br>
+          <button onclick="viewOrder('${docSnap.id}')">View</button>
+          <button onclick="handleOrder('${docSnap.id}')">Mark Handled</button>
+        </div>`;
     });
+    if (!snapshot.empty) document.getElementById("order-sound").play();
+  });
 
-  db.collection("calls").where("status","==","pending")
-    .onSnapshot(snapshot => {
-      const list = document.getElementById("calls-list");
-      list.innerHTML = "";
-      snapshot.forEach(doc => {
-        const call = doc.data();
-        list.innerHTML += `
-          <div class="card unhandled">
-            Table ${call.table} called at ${new Date(call.timestamp.seconds*1000).toLocaleTimeString()}<br>
-            <button onclick="handleCall('${doc.id}')">Mark Handled</button>
-          </div>`;
-      });
-      if (!snapshot.empty) document.getElementById("call-sound").play();
+  const callsQuery = query(collection(db, "calls"), where("status","==","pending"));
+  onSnapshot(callsQuery, snapshot => {
+    const list = document.getElementById("calls-list");
+    list.innerHTML = "";
+    snapshot.forEach(docSnap => {
+      const call = docSnap.data();
+      list.innerHTML += `
+        <div class="card unhandled">
+          Table ${call.table} called at ${new Date(call.timestamp.seconds*1000).toLocaleTimeString()}<br>
+          <button onclick="handleCall('${docSnap.id}')">Mark Handled</button>
+        </div>`;
     });
+    if (!snapshot.empty) document.getElementById("call-sound").play();
+  });
 
-  async function viewOrder(id) {
-    const doc = await db.collection("orders").doc(id).get();
-    const order = doc.data();
+  // View order details
+  window.viewOrder = async function(id) {
+    const docRef = doc(db, "orders", id);
+    const docSnap = await getDoc(docRef);
+    const order = docSnap.data();
     alert(`Order ${order.orderId}\nTable: ${order.table}\nItems:\n${order.cart.map(i=>i.qty+" x "+i.name).join("\n")}\nTotal: ${order.total}\nNotes: ${order.notes}`);
   }
 
-  async function handleOrder(id) {
-    await db.collection("orders").doc(id).update({ status:"handled" });
+  // Mark order handled
+  window.handleOrder = async function(id) {
+    const docRef = doc(db, "orders", id);
+    await updateDoc(docRef, { status:"handled" });
   }
-  async function handleCall(id) {
-    await db.collection("calls").doc(id).update({ status:"handled" });
+
+  // Mark call handled
+  window.handleCall = async function(id) {
+    const docRef = doc(db, "calls", id);
+    await updateDoc(docRef, { status:"handled" });
   }
 
   // Admin menu management
-  async function saveMenuItem() {
+  window.saveMenuItem = async function() {
     const name = document.getElementById("item-name").value;
     const price = parseFloat(document.getElementById("item-price").value);
     const category = document.getElementById("item-category").value;
     const days = Array.from(document.querySelectorAll(".days input:checked")).map(cb => cb.value);
     const disabled = document.getElementById("item-disabled").checked;
 
-    await db.collection("menu").doc(name).set({
+    const docRef = doc(db, "menu", name);
+    await setDoc(docRef, {
       name, price, category,
       availabilityDays: days,
       isDisabled: disabled
@@ -126,6 +150,7 @@
     alert("✅ Menu item saved/updated");
   }
 </script>
+
 
 </body>
 
