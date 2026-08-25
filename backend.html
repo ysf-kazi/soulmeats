@@ -3,54 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <title>Soulmeats Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-    h2 { color:#007bff; }
-    #orders, #calls { margin-top:20px; }
-    .alert { background:#ffdddd; border:1px solid #ff0000; padding:10px; margin:10px 0; border-radius:6px; }
-  </style>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding:0; }
+  h2 { margin-top:0; }
+  .container { display:flex; height:100vh; }
+  .section { flex:1; padding:20px; overflow-y:auto; }
+  .section.orders { border-right:2px solid #ccc; }
+  .card { padding:10px; margin-bottom:10px; border:1px solid #ddd; background:#f9f9f9; }
+  .card.unhandled { background:#ffe; }
+  .menu-item { padding:10px; border-bottom:1px solid #ddd; }
+  .menu-item.unavailable { color:#999; }
+  .menu-item-note { font-size:0.9em; color:red; }
+  button { margin-top:5px; }
+  .admin-form { margin-top:20px; border-top:2px solid #ccc; padding-top:10px; }
+  .days { display:flex; gap:5px; margin-top:5px; }
+  .days label { font-size:0.9em; }
+</style>
+
 </head>
 <body>
-  <h2>Soulmeats Dashboard</h2>
-  <div id="orders"><h3>New Orders</h3></div>
-  <div id="calls"><h3>Waiter Calls</h3></div>
+  <!-- Dashboard -->
+  <div class="container">
+    <div class="section orders">
+      <h2>Orders Received</h2>
+      <div id="orders-list"></div>
+    </div>
+    <div class="section calls">
+      <h2>Waiter Calls</h2>
+      <div id="calls-list"></div>
+    </div>
+  </div>
 
-  <!-- Two separate sounds -->
-  <audio id="ping" src="ping.mp3" preload="auto"></audio>
-  <audio id="buzz" src="buzz.mp3" preload="auto"></audio>
-  
+  <!-- Admin Menu Management -->
+  <div class="admin-form">
+    <h2>Manage Menu Item</h2>
+    <input id="item-name" placeholder="Item Name"><br>
+    <input id="item-price" type="number" placeholder="Price"><br>
+    <input id="item-category" placeholder="Category"><br>
+    <div class="days">
+      <label><input type="checkbox" value="Mon">Mon</label>
+      <label><input type="checkbox" value="Tue">Tue</label>
+      <label><input type="checkbox" value="Wed">Wed</label>
+      <label><input type="checkbox" value="Thu">Thu</label>
+      <label><input type="checkbox" value="Fri">Fri</label>
+      <label><input type="checkbox" value="Sat">Sat</label>
+      <label><input type="checkbox" value="Sun">Sun</label>
+    </div>
+    <label><input type="checkbox" id="item-disabled"> Disable Item</label><br>
+    <button onclick="saveMenuItem()">Save Item</button>
+  </div>
+
+  <!-- Audio notifications -->
+  <audio id="order-sound" src="order-tone.mp3"></audio>
+  <audio id="call-sound" src="buzz-tone.mp3"></audio>
+
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwXN-Uw0QNbMVsq8J3NiZ57MNar1Cl7sJYPlNvDpTulRv3KKAIaThhG5BnuxxZdCUUHsw/exec"; // same Apps Script endpoint
+  // Firebase init
+  const firebaseConfig = { /* your config */ };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    async function pollUpdates() {
-      try {
-        const res = await fetch(scriptURL + "?dashboard=1");
-        const data = await res.json();
+  // Dashboard listeners
+  db.collection("orders").where("status","==","pending")
+    .onSnapshot(snapshot => {
+      const list = document.getElementById("orders-list");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const order = doc.data();
+        list.innerHTML += `
+          <div class="card unhandled">
+            <strong>${order.orderId}</strong> (Table ${order.table})<br>
+            Total: ${order.total}<br>
+            <button onclick="viewOrder('${doc.id}')">View</button>
+            <button onclick="handleOrder('${doc.id}')">Mark Handled</button>
+          </div>`;
+      });
+      if (!snapshot.empty) document.getElementById("order-sound").play();
+    });
 
-        // Handle new orders
-        if (data.newOrders && data.newOrders.length > 0) {
-          data.newOrders.forEach(order => {
-            document.getElementById("orders").innerHTML += 
-              `<div class="alert">🔔 New Order: ${order.orderId} (Table ${order.table})</div>`;
-            document.getElementById("ping").play(); // ping sound
-          });
-        }
+  db.collection("calls").where("status","==","pending")
+    .onSnapshot(snapshot => {
+      const list = document.getElementById("calls-list");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const call = doc.data();
+        list.innerHTML += `
+          <div class="card unhandled">
+            Table ${call.table} called at ${new Date(call.timestamp.seconds*1000).toLocaleTimeString()}<br>
+            <button onclick="handleCall('${doc.id}')">Mark Handled</button>
+          </div>`;
+      });
+      if (!snapshot.empty) document.getElementById("call-sound").play();
+    });
 
-        // Handle waiter calls
-        if (data.calls && data.calls.length > 0) {
-          data.calls.forEach(call => {
-            document.getElementById("calls").innerHTML += 
-              `<div class="alert">🚨 Waiter Call: Table ${call.table}</div>`;
-            document.getElementById("buzz").play(); // buzz sound
-          });
-        }
-      } catch (e) {
-        console.error("Polling error", e);
-      }
-    }
+  async function viewOrder(id) {
+    const doc = await db.collection("orders").doc(id).get();
+    const order = doc.data();
+    alert(`Order ${order.orderId}\nTable: ${order.table}\nItems:\n${order.cart.map(i=>i.qty+" x "+i.name).join("\n")}\nTotal: ${order.total}\nNotes: ${order.notes}`);
+  }
 
-    // Poll every 10 seconds
-    setInterval(pollUpdates, 10000);
-  </script>
+  async function handleOrder(id) {
+    await db.collection("orders").doc(id).update({ status:"handled" });
+  }
+  async function handleCall(id) {
+    await db.collection("calls").doc(id).update({ status:"handled" });
+  }
+
+  // Admin menu management
+  async function saveMenuItem() {
+    const name = document.getElementById("item-name").value;
+    const price = parseFloat(document.getElementById("item-price").value);
+    const category = document.getElementById("item-category").value;
+    const days = Array.from(document.querySelectorAll(".days input:checked")).map(cb => cb.value);
+    const disabled = document.getElementById("item-disabled").checked;
+
+    await db.collection("menu").doc(name).set({
+      name, price, category,
+      availabilityDays: days,
+      isDisabled: disabled
+    }, { merge:true });
+
+    alert("✅ Menu item saved/updated");
+  }
+</script>
+
 </body>
+
 </html>
