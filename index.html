@@ -236,10 +236,10 @@
 
   let menu = [];
   let cart = [];
+  let searchTimeout;
 
   function formatCurrency(amount) { return amount.toLocaleString('en-US'); }
 
-  // ✅ Auto-fetch table from URL
   function getTableNumber() {
     let table = new URLSearchParams(window.location.search).get("table");
     if (!table) table = new URLSearchParams(window.location.hash.substring(1)).get("table");
@@ -255,7 +255,6 @@
     renderMenu();
   }
 
-  // ✅ Search by name OR category
   function renderMenu() {
     const search = document.getElementById("search").value.toLowerCase();
     const menuDiv = document.getElementById("menu");
@@ -337,8 +336,10 @@
 
     document.getElementById("cart-details").innerHTML =
       itemsHtml +
-      `<div style="margin-top:10px;font-weight:bold;">Total: Tsh ${formatCurrency(total)}</div>
-       <button onclick="submitOrder()">Submit Order</button>`;  // ✅ Submit from modal
+      `<textarea id="order-notes" placeholder="Add notes/instructions..." style="width:100%;height:60px;margin-top:10px;"></textarea>
+       <button onclick="submitOrder()">Submit Order</button>
+       <button onclick="closeModal()">Close</button>
+       <div style="margin-top:10px;font-weight:bold;">Total: Tsh ${formatCurrency(total)}</div>`;
 
     document.getElementById("overlay").style.display = "block";
     document.getElementById("cart-modal").style.display = "block";
@@ -348,7 +349,6 @@
     document.getElementById("overlay").style.display = "none";
     document.getElementById("cart-modal").style.display = "none";
   }
-
   async function submitOrder() {
     if (cart.length === 0) { alert("Cart is empty!"); return; }
     const table = getTableNumber();
@@ -365,7 +365,7 @@
     try {
       await setDoc(doc(db, "orders", orderId), orderData);
       alert("✅ Order Received! Your Order ID: " + orderId);
-      navigator.clipboard.writeText(orderId);  // ✅ Auto copy
+      navigator.clipboard.writeText(orderId);
     } catch (err) { alert("❌ Error submitting order"); }
 
     cart = [];
@@ -388,9 +388,11 @@
     const docSnap = await getDoc(doc(db, "orders", orderId));
     if (docSnap.exists()) {
       const data = docSnap.data();
-      const items = data.cart.map(i => `${i.qty} x ${i.name}`).join("<br>");
+      const items = data.cart.map(i => 
+        `${i.qty} x ${i.name} = Tsh ${formatCurrency(i.qty * i.price)}`
+      ).join("<br>");
       document.getElementById("order-result").innerHTML =
-        `<div style="background:#f9f9f9;padding:10px;border-radius:8px;">
+        `<div class="bill-box">
            <strong>Order ID:</strong> ${data.orderId}<br>
            <strong>Table:</strong> ${data.table}<br>
            <strong>Items:</strong><br>${items}<br>
@@ -403,7 +405,6 @@
       document.getElementById("order-result").innerHTML = "Order not found.";
     }
   }
-    // ✅ Save bill as image (requires html2canvas library)
   function saveBillAsImage() {
     const node = document.getElementById("order-result");
     html2canvas(node).then(canvas => {
@@ -414,7 +415,6 @@
     });
   }
 
-  // ✅ Share bill (requires Web Share API support)
   function shareBill() {
     const billText = document.getElementById("order-result").innerText;
     if (navigator.share) {
@@ -439,6 +439,12 @@
   window.closeCheckOrder = () => document.getElementById("check-order-modal").style.display = "none";
   window.saveBillAsImage = saveBillAsImage;
   window.shareBill = shareBill;
+
+  // ✅ Debounced search for responsiveness
+  document.getElementById("search").addEventListener("keyup", () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(renderMenu, 200);
+  });
 
   // ✅ Load menu on start
   loadMenu();
