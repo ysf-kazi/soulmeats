@@ -1,27 +1,16 @@
-# Soulmeats Restaurant Ordering System
+# React + Vite
 
-Online QR-based ordering system for Soulmeats Open Air Restaurant.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Features
+Currently, two official plugins are available:
 
-- QR code ordering for each restaurant table
-- Customers can place multiple orders during one table session
-- Call a waiter
-- Request a bill
-- Cash and Selcom QR Pay / Lipa Namba payment options
-- Staff/admin dashboard
-- Menu managed through Firebase
-- Orders and bills stored in Firebase Firestore
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Technology
+## React Compiler
 
-- React
-- Vite
-- Firebase / Firestore
-- GitHub Pages
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Restaurant
+## Expanding the ESLint configuration
 
-**Soulmeats Open Air Restaurant**
-
-Currency: TZS
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
