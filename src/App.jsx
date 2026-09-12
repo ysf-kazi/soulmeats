@@ -23,7 +23,7 @@ function App() {
      STAFF AREA
      ========================================================= */
 
-  const isStaffPage = window.location.pathname.startsWith("/staff");
+  const isStaffPage = window.location.pathname.startsWith("/soulmeats/staff");
 
   if (isStaffPage) {
     return (
@@ -34,7 +34,7 @@ function App() {
           </div>
         }
       >
-        <StaffArea />
+        <StaffArea/>
       </Suspense>
     );
   }
@@ -1805,7 +1805,7 @@ function App() {
 
                             <div className="selcom-qr-box">
                               <img
-                                src="/selcom-qr.png"
+                                src="./assets/selcom-qr.png"
                                 alt="Selcom Lipa Namba QR Code"
                               />
                             </div>

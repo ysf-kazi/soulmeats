@@ -1194,3 +1194,193 @@
 .staff-menu-admin-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #eee; }
 @media (max-width: 900px) { .staff-header-nav a { display: none; } .staff-report-grid { grid-template-columns: 1fr 1fr; } .staff-session-list { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .staff-header-nav { gap: 5px; } .staff-sound-button { min-height: 35px; padding: 0 8px; font-size: 9px; } .staff-back-button { min-height: 35px; padding: 0 9px; font-size: 9px; } .staff-report-grid { grid-template-columns: 1fr 1fr; gap: 9px; } .staff-report-card { padding: 15px; } .staff-report-card strong { font-size: 18px; } .staff-menu-form { grid-template-columns: 1fr; } .staff-menu-days, .staff-menu-form-actions { grid-column: auto; } .staff-menu-admin-main { flex-direction: column; } .staff-menu-admin-status { max-width: none; text-align: left; } .staff-menu-admin-actions { justify-content: flex-start; flex-wrap: wrap; } }
+
+/* =========================================================
+   SOULMEATS STAFF - CONSISTENT LIGHT THEME
+   ========================================================= */
+
+html {
+  color-scheme: light;
+}
+
+.staff-dashboard {
+  background: #f4f4f2;
+  color: #171717;
+  min-height: 100vh;
+}
+
+.staff-dashboard h1,
+.staff-dashboard h2,
+.staff-dashboard h3,
+.staff-dashboard h4,
+.staff-dashboard strong {
+  color: #171717;
+}
+
+.staff-dashboard p {
+  color: #555555;
+}
+
+.staff-dashboard-card,
+.staff-welcome-card,
+.staff-order-card,
+.staff-empty-card,
+.staff-report-card,
+.staff-session-card,
+.staff-menu-manager-card,
+.staff-menu-admin-card {
+  color: #171717;
+  background: #ffffff;
+}
+
+.staff-dashboard-card h3,
+.staff-welcome-card h2,
+.staff-order-card h3,
+.staff-empty-card h3,
+.staff-report-card strong,
+.staff-session-card h3,
+.staff-menu-admin-card h3 {
+  color: #171717;
+}
+
+.staff-dashboard-card p,
+.staff-order-card p,
+.staff-empty-card p,
+.staff-session-card p,
+.staff-menu-admin-card p {
+  color: #666666;
+}
+
+.staff-order-item {
+  color: #171717;
+}
+
+.staff-order-item strong {
+  color: #171717;
+}
+
+.staff-order-item span {
+  color: #666666;
+}
+
+.staff-order-total {
+  color: #171717;
+}
+
+.staff-order-total span {
+  color: #555555;
+}
+
+.staff-page-tab {
+  background: #ffffff;
+  color: #444444;
+}
+
+.staff-page-tab.active {
+  background: #181818;
+  color: #ffffff;
+}
+
+.staff-menu-form input,
+.staff-menu-form textarea,
+.staff-menu-form select {
+  background: #ffffff;
+  color: #171717;
+}
+
+.staff-menu-form input::placeholder,
+.staff-menu-form textarea::placeholder {
+  color: #777777;
+  opacity: 1;
+}
+
+.staff-menu-form label > span,
+.staff-menu-days > span {
+  color: #444444;
+}
+
+.staff-menu-days p {
+  color: #777777;
+}
+
+.staff-day-button {
+  background: #ffffff;
+  color: #555555;
+}
+
+.staff-day-button.active {
+  background: #181818;
+  color: #ffffff;
+}
+
+.staff-secondary-action {
+  background: #ffffff;
+  color: #333333;
+}
+
+.staff-danger-action {
+  background: #ffffff;
+  color: #b83b3b;
+}
+
+.staff-menu-admin-status {
+  color: #666666;
+}
+
+.staff-open-order {
+  background: #f6f6f4;
+  color: #171717;
+}
+
+.staff-open-order p {
+  color: #555555;
+}
+
+.staff-session-empty {
+  background: #f5f5f3;
+  color: #666666;
+}
+
+.staff-order-note {
+  background: #fff7e8;
+  color: #5d4a29;
+}
+
+.staff-order-note strong {
+  color: #805b18;
+}
+
+.staff-order-note span {
+  color: #5d4a29;
+}
+
+/* Keep staff header dark regardless of device theme */
+.staff-dashboard-header {
+  background: #111111;
+  color: #ffffff;
+}
+
+.staff-dashboard-header h1,
+.staff-dashboard-header p,
+.staff-dashboard-header strong,
+.staff-dashboard-header span {
+  color: inherit;
+}
+
+.staff-dashboard-header .staff-header-nav a,
+.staff-dashboard-header .staff-sound-button,
+.staff-dashboard-header .staff-back-button,
+.staff-dashboard-header .staff-logout-button {
+  color: #eeeeee;
+}
+
+.staff-dashboard-header .staff-sound-button.enabled {
+  color: #9de2b8;
+}
+
+button,
+input,
+textarea,
+select {
+  color-scheme: light;
+}

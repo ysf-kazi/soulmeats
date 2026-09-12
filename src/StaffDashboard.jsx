@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   collection,
   onSnapshot,
@@ -20,89 +20,6 @@ export default function StaffDashboard({ user }) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [soundEnabled, setSoundEnabled] = useState(false);
-
-  const knownOrderIds = useRef(new Set());
-  const knownWaiterCallIds = useRef(new Set());
-
-  const audioContextRef = useRef(null);
-  const soundEnabledRef = useRef(false);
-
-  function getAudioContext() {
-    if (!audioContextRef.current) {
-      const AudioContextClass =
-        window.AudioContext || window.webkitAudioContext;
-
-      if (!AudioContextClass) {
-        return null;
-      }
-
-      audioContextRef.current = new AudioContextClass();
-    }
-
-    return audioContextRef.current;
-  }
-
-  async function enableSound() {
-    const context = getAudioContext();
-
-    if (!context) {
-      return;
-    }
-
-    if (context.state === "suspended") {
-      await context.resume();
-    }
-
-    soundEnabledRef.current = true;
-    setSoundEnabled(true);
-
-    playAlert("order");
-  }
-
-  function playAlert(type) {
-    const context = getAudioContext();
-
-    if (!context || !soundEnabledRef.current) {
-      return;
-    }
-
-    const now = context.currentTime;
-
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-
-    oscillator.type = "sine";
-
-    oscillator.frequency.setValueAtTime(
-      type === "waiter" ? 520 : 760,
-      now
-    );
-
-    oscillator.frequency.setValueAtTime(
-      type === "waiter" ? 390 : 620,
-      now + 0.14
-    );
-
-    gain.gain.setValueAtTime(0.0001, now);
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.22,
-      now + 0.02
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      now + 0.32
-    );
-
-    oscillator.start(now);
-    oscillator.stop(now + 0.34);
-  }
 
   /* =========================================================
      LIVE ORDERS
@@ -136,23 +53,6 @@ export default function StaffDashboard({ user }) {
             return bTime - aTime;
           });
 
-        const newPendingOrder = orderData.some(
-          (order) =>
-            order.status === "pending" &&
-            !knownOrderIds.current.has(order.id)
-        );
-
-        if (
-          knownOrderIds.current.size > 0 &&
-          newPendingOrder
-        ) {
-          playAlert("order");
-        }
-
-        knownOrderIds.current = new Set(
-          orderData.map((order) => order.id)
-        );
-
         setOrders(orderData);
         setLoading(false);
       },
@@ -162,7 +62,10 @@ export default function StaffDashboard({ user }) {
           snapshotError
         );
 
-        setError("Unable to load live orders.");
+        setError(
+          "Unable to load live orders."
+        );
+
         setLoading(false);
       }
     );
@@ -197,22 +100,6 @@ export default function StaffDashboard({ user }) {
 
             return bTime - aTime;
           });
-
-        const newWaiterCall = callData.some(
-          (call) =>
-            !knownWaiterCallIds.current.has(call.id)
-        );
-
-        if (
-          knownWaiterCallIds.current.size > 0 &&
-          newWaiterCall
-        ) {
-          playAlert("waiter");
-        }
-
-        knownWaiterCallIds.current = new Set(
-          callData.map((call) => call.id)
-        );
 
         setWaiterCalls(callData);
       },
@@ -328,7 +215,9 @@ export default function StaffDashboard({ user }) {
      WAITER CALL ACKNOWLEDGEMENT
      ========================================================= */
 
-  async function acknowledgeWaiterCall(callId) {
+  async function acknowledgeWaiterCall(
+    callId
+  ) {
     try {
       setError("");
 
@@ -336,7 +225,8 @@ export default function StaffDashboard({ user }) {
         doc(db, "waiterCalls", callId),
         {
           status: "acknowledged",
-          acknowledgedBy: user?.uid || "",
+          acknowledgedBy:
+            user?.uid || "",
           acknowledgedAt: new Date(),
         }
       );
@@ -369,9 +259,10 @@ export default function StaffDashboard({ user }) {
         billId
       );
 
-      const billData = billRequests.find(
-        (bill) => bill.id === billId
-      );
+      const billData =
+        billRequests.find(
+          (bill) => bill.id === billId
+        );
 
       if (!billData?.sessionId) {
         setError(
@@ -499,20 +390,23 @@ export default function StaffDashboard({ user }) {
      STATISTICS
      ========================================================= */
 
-  const pendingOrders = orders.filter(
-    (order) =>
-      order.status === "pending"
-  ).length;
+  const pendingOrders =
+    orders.filter(
+      (order) =>
+        order.status === "pending"
+    ).length;
 
-  const preparingOrders = orders.filter(
-    (order) =>
-      order.status === "preparing"
-  ).length;
+  const preparingOrders =
+    orders.filter(
+      (order) =>
+        order.status === "preparing"
+    ).length;
 
-  const readyOrders = orders.filter(
-    (order) =>
-      order.status === "ready"
-  ).length;
+  const readyOrders =
+    orders.filter(
+      (order) =>
+        order.status === "ready"
+    ).length;
 
   /* =========================================================
      DASHBOARD
@@ -549,26 +443,17 @@ export default function StaffDashboard({ user }) {
 
           <div className="staff-header-nav">
 
-            <a href="/staff/sessions">
+            <a
+              href={`${import.meta.env.BASE_URL}staff/sessions`}
+            >
               Sessions & Reports
             </a>
 
-            <a href="/staff/menu">
+            <a
+              href={`${import.meta.env.BASE_URL}staff/menu`}
+            >
               Item Management
             </a>
-
-            <button
-              className={
-                soundEnabled
-                  ? "staff-sound-button enabled"
-                  : "staff-sound-button"
-              }
-              onClick={enableSound}
-            >
-              {soundEnabled
-                ? "🔊 Sound On"
-                : "🔔 Enable Sound"}
-            </button>
 
           </div>
 
@@ -995,7 +880,6 @@ export default function StaffDashboard({ user }) {
                           bill.serviceCharge
                         )}
                       </strong>
-
                     </div>
 
                     <div>
@@ -1009,7 +893,6 @@ export default function StaffDashboard({ user }) {
                           bill.tax
                         )}
                       </strong>
-
                     </div>
 
                   </div>
@@ -1198,6 +1081,7 @@ export default function StaffDashboard({ user }) {
 
                   {order.note && (
                     <div className="staff-order-note">
+
                       <strong>
                         Customer note
                       </strong>
@@ -1205,6 +1089,7 @@ export default function StaffDashboard({ user }) {
                       <span>
                         {order.note}
                       </span>
+
                     </div>
                   )}
 
