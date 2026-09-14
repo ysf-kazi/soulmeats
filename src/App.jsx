@@ -1805,7 +1805,7 @@ function App() {
 
                             <div className="selcom-qr-box">
                               <img
-                                src="/selcom_qr.jpg"
+                                src="https://ysf-kazi.github.io/soulmeats/selcom_qr.jpg"
                                 alt="Selcom Lipa Namba QR Code"
                               />
                             </div>
